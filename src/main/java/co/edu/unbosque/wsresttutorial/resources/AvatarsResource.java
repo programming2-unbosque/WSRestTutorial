@@ -3,7 +3,10 @@ package co.edu.unbosque.wsresttutorial.resources;
 import jakarta.servlet.ServletContext;
 
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.*;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
@@ -24,28 +27,41 @@ public class AvatarsResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
     public Response uploadFile(@PathParam("username") String username, MultipartFormDataInput input) {
-        // Getting the file from form input
-        Map<String, List<InputPart>> formParts = input.getFormDataMap();
-        List<InputPart> inputParts = formParts.get("file");
+        String fileName = "";
 
-        for (InputPart inputPart : inputParts) {
-            try {
-                // Retrieving headers and reading the Content-Disposition header to file name
-                MultivaluedMap<String, String> headers = inputPart.getHeaders();
-                String fileName = parseFileName(headers);
+        try {
+            // Getting the file from form input
+            Map<String, List<InputPart>> formParts = input.getFormDataMap();
+
+            // Extracting text by input name
+            if (formParts.get("filename") != null) {
+                fileName = formParts.get("filename").get(0).getBodyAsString();
+            }
+
+            // Extracting multipart by input name
+            List<InputPart> inputParts = formParts.get("avatar");
+
+            for (InputPart inputPart : inputParts) {
+                // If file name is not specified as input, use default file name
+                if (fileName.equals("") || fileName == null) {
+                    // Retrieving headers and reading the Content-Disposition header to file name
+                    MultivaluedMap<String, String> headers = inputPart.getHeaders();
+                    fileName = parseFileName(headers);
+                }
 
                 // Handling the body of the part with an InputStream
                 InputStream istream = inputPart.getBody(InputStream.class,null);
 
+                // Saving the file on disk
                 saveFile(istream, fileName, context);
-            } catch (IOException e) {
-                return Response.serverError().build();
             }
-        }
 
-        return Response.status(201)
-                .entity("Avatar successfully uploaded for " + username)
-                .build();
+            return Response.status(201)
+                    .entity("Avatar successfully uploaded for " + username)
+                    .build();
+        } catch (IOException e) {
+            return Response.serverError().build();
+        }
     }
 
     // Parse Content-Disposition header to get the file name

@@ -39,7 +39,7 @@ public class UsersResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response create(User user) {
-        String contextPath =context.getRealPath("") + File.separator;
+        String contextPath = context.getRealPath("") + File.separator;
 
         try {
             user = new UserService().createUser(user.getUsername(), user.getPassword(), user.getRole(), contextPath);
